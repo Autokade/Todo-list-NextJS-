@@ -2,7 +2,7 @@
 import Todo from "@/components/Todo";
 import axios from "axios";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -11,6 +11,39 @@ export default function Home() {
     title: "",
     description: "",
   });
+
+  const [todoData, setTodoData] = useState([]);
+
+  const fetchTodos = async () => {
+    const response = await axios("/api");
+
+    setTodoData(response.data.todos);
+  };
+
+  const deleteTodo = async (id) => {
+    const response = await axios.delete("/api", {
+      params: {
+        mongoId: id,
+      },
+    });
+    toast.success(response.data.msg);
+    fetchTodos();
+  };
+  const completeTodo = async (id) => {
+    const response = await axios.put('/api', {
+
+    },{
+      params:{
+        mongoId: id
+      }
+    })
+    toast.success(response.data.msg);
+    fetchTodos();
+  }
+
+  useEffect(() => {
+    fetchTodos();
+  }, []);
 
   const onChangeHandler = (e) => {
     const name = e.target.name;
@@ -23,21 +56,22 @@ export default function Home() {
     e.preventDefault();
     try {
       // api code
-const response = await axios.post('/api', formData);
+      const response = await axios.post("/api", formData);
 
       toast.success(response.data.msg);
       setFormData({
         title: "",
         description: "",
       });
+      await fetchTodos();
     } catch (error) {
-toast.error("Error")
+      toast.error("Error");
     }
   };
 
   return (
     <>
-    <ToastContainer theme="dark"/>
+      <ToastContainer theme="dark" />
       <form
         onSubmit={onSubmitHandler}
         className="flex items-start flex-col gap-2 width-{80%} max-w-{600px} mt-24 px-2, mx-auto"
@@ -84,9 +118,20 @@ toast.error("Error")
             </tr>
           </thead>
           <tbody>
-            <Todo />
-            <Todo />
-            <Todo />
+            {todoData.map((item, index) => {
+              return (
+                <Todo
+                  key={index}
+                  id={index}
+                  title={item.title}
+                  description={item.description}
+                  complete={item.isCompleted}
+                  mongoId={item._id}
+                  deleteTodo={deleteTodo}
+                  completeTodo={completeTodo}
+                />
+              );
+            })}
           </tbody>
         </table>
       </div>
